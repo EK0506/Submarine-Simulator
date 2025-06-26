@@ -1,11 +1,10 @@
-"""Version 1 only contain the core game mechanics, including
-Player control, spawning of fish and plastics, score and fuel display"""
 import pygame
 import random
 import time
+
 pygame.init()
 
-# Set screen size
+# Screen setup
 screen_width = 800
 screen_height = 500
 window = pygame.display.set_mode((screen_width, screen_height))
@@ -17,45 +16,74 @@ brown = (102, 51, 0)
 red = (255, 0, 0)
 blue = (0, 0, 255)
 white = (255, 255, 255)
+black = (0, 0, 0)
 
-# Fonts and timing
+# Fonts
+title_font = pygame.font.Font(None, 74)
 score_font = pygame.font.Font(None, 36)
 
-# Score amd fuel variables
-total_fuel_time = 60
-current_score = 0
-high_score = 0  # 60 seconds of total run time
+# Game assets
+play_text = title_font.render("PLAY", True, black)
+menu_play_button_rect = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 100, 200, 60)
+instructions_play_button_rect = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 180, 200, 60)
 
-# Ship properties
+
+# Game variables
 ship_width = 50
 ship_height = 30
-ship_x = 50
-ship_y = screen_height // 2
 ship_velocity = 4
 
-# Plastics properties
 plastic_width = plastic_height = 30
 plastic_speed = 3
-#Fish properties
+
 fish_width = fish_height = 30
 fish_speed = 4
 
-#Functions
 
-#Loading high score from file
-def load_high_score():
-    try:
-        with open("high_score.txt", 'r') as f:
-            return int(f.read())
-    except (FileNotFoundError, ValueError):
-        return 0
+clock = pygame.time.Clock()
+
+def draw_menu():
+    window.fill(white)
+    title_text = title_font.render("Submarine Game", True, black)
+    window.blit(title_text, (screen_width // 2 - title_text.get_width() // 2, 150))
+    pygame.draw.rect(window, blue, menu_play_button_rect)
+    play_text = title_font.render("PLAY", True, black)
+    play_button_rect = pygame.Rect(screen_width // 2 - 100, (screen_height + 100) // 2 + 60, 200, 50)
+    window.blit(play_text, (play_button_rect.centerx - play_text.get_width() // 2,
+                            play_button_rect.centery - play_text.get_height() // 2))
+    pygame.display.flip()
+
+def draw_instructions():
+    window.fill(white)
+    institle_text = title_font.render("Instructions", True, black)
+    window.blit(institle_text, (screen_width // 2 - institle_text.get_width() // 2, 50))
     
-#Save new high score to file if higher
-def save_high_score(high_score):
-    with open("high_score.txt", "w") as f:
-        f.write(str(high_score))
+    lines = [
+        "Use UP and DOWN arrow keys to move.",
+        "Avoid plastic waste (red) — it reduces fuel.",
+        "Catch fish (blue) — it gives you points!",
+        "Catch as much fish as possible before fuel runs out!",
+        "Click PLAY to begin!"
+    ]
+    for i, line in enumerate(lines):
+        text = score_font.render(line, True, black)
+        window.blit(text, (100, 150 + i * 40))
+    
+    pygame.draw.rect(window, blue, instructions_play_button_rect)
+    window.blit(play_text, (instructions_play_button_rect.centerx - play_text.get_width() // 2,
+                            instructions_play_button_rect.centery - play_text.get_height() // 2))
+    pygame.display.flip()
 
-#Display scores and fuels on the top right
+
+def draw_game_over(score):
+    window.fill(white)
+    game_over_text = title_font.render("Game Over", True, black)
+    score_text = score_font.render(f"Your Score: {score}", True, black)
+    window.blit(game_over_text, (screen_width // 2 - game_over_text.get_width() // 2, 150))
+    window.blit(score_text, (screen_width // 2 - score_text.get_width() // 2, 250))
+    pygame.display.flip()
+    pygame.time.wait(3000)
+
 def display_score(score, high_score, fuel_percent):
     score_text = score_font.render("Score: " + str(score), True, white)
     high_score_text = score_font.render("High Score: " + str(high_score), True, white)
@@ -64,83 +92,109 @@ def display_score(score, high_score, fuel_percent):
     window.blit(high_score_text, [screen_width - 200, 40])
     window.blit(fuel_text, [screen_width - 200, 70])
 
-#Spawn plastic
 def spawn_plastic():
     x = screen_width
     y = random.randint(0, screen_height - plastic_height)
     return pygame.Rect(x, y, plastic_width, plastic_height)
-#Spawn fish
+
 def spawn_fish():
     x = screen_width
     y = random.randint(0, screen_height - fish_height)
     return pygame.Rect(x, y, fish_width, fish_height)
 
-#Variables
-running = True
-clock = pygame.time.Clock()
-plastics = []
-fish_list = []
-high_score = load_high_score()
-start_time = time.time()
+def load_high_score():
+    try:
+        with open("high_score.txt", 'r') as f:
+            return int(f.read())
+    except (FileNotFoundError, ValueError):
+        return 0
 
-while running:
-    window.fill(light_blue)
+def save_high_score(high_score):
+    with open("high_score.txt", "w") as f:
+        f.write(str(high_score))
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+def wait_for_play_click(button_rect):
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if button_rect.collidepoint(event.pos):
+                    return True
+        clock.tick(60)
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_UP] and ship_y > 0:
-        ship_y -= ship_velocity
-    if keys[pygame.K_DOWN] and ship_y + ship_height < screen_height:
-        ship_y += ship_velocity
 
-    ship_rect = pygame.Rect(ship_x, ship_y, ship_width, ship_height)
-    pygame.draw.rect(window, brown, ship_rect)
+def run_game():
+    total_fuel_time = 60
+    ship_x = 50
+    ship_y = screen_height // 2
+    current_score = 0
+    plastics = []
+    fish_list = []
 
-    # Spawn and move plastic
-    if random.randint(1, 100) == 1:
-        plastics.append(spawn_plastic())
+    high_score = load_high_score()
+    start_time = time.time()
+    running = True
 
-    for plastic in plastics[:]:
-        plastic.x -= plastic_speed
-        if ship_rect.colliderect(plastic):
-            plastics.remove(plastic)
-            total_fuel_time -= 3  # Lose 3 seconds of total run time (~5% fuel)
-        else:
-            pygame.draw.rect(window, red, plastic)
+    while running:
+        window.fill(light_blue)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
 
-    plastics = [p for p in plastics if p.x + plastic_width > 0]
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP] and ship_y > 0:
+            ship_y -= ship_velocity
+        if keys[pygame.K_DOWN] and ship_y + ship_height < screen_height:
+            ship_y += ship_velocity
 
-    # Spawn and move fish
-    if random.randint(1, 80) == 1:
-        fish_list.append(spawn_fish())
+        ship_rect = pygame.Rect(ship_x, ship_y, ship_width, ship_height)
+        pygame.draw.rect(window, brown, ship_rect)
 
-    for fish in fish_list[:]:
-        fish.x -= fish_speed
-        if ship_rect.colliderect(fish):
-            current_score += 1
-        else:
-            pygame.draw.rect(window, blue, fish)
-    #Remove fish when out of the screen
-    fish_list = [f for f in fish_list if f.x + fish_width > 0]
+        if random.randint(1, 100) == 1:
+            plastics.append(spawn_plastic())
+        for plastic in plastics[:]:
+            plastic.x -= plastic_speed
+            if ship_rect.colliderect(plastic):
+                plastics.remove(plastic)
+                total_fuel_time -= 3
+            else:
+                pygame.draw.rect(window, red, plastic)
+        plastics = [p for p in plastics if p.x + plastic_width > 0]
 
-    # Calculate fuel percentage
-    elapsed_time = time.time() - start_time
-    fuel_left = max(0, 100 - int((elapsed_time / total_fuel_time) * 100))
-    if fuel_left <= 0:  # End game when fuel runs out
-        fuel_left = 0
-        running = False  
-    #Update high score to file if current score is higher
-    if current_score > high_score:
-        high_score = current_score
-        save_high_score(high_score)
+        if random.randint(1, 80) == 1:
+            fish_list.append(spawn_fish())
+        for fish in fish_list[:]:
+            fish.x -= fish_speed
+            if ship_rect.colliderect(fish):
+                current_score += 1
+                fish_list.remove(fish)
+            else:
+                pygame.draw.rect(window, blue, fish)
+        fish_list = [f for f in fish_list if f.x + fish_width > 0]
 
-    #Display current score, high score and fuel left on top right
-    display_score(current_score, high_score, fuel_left)
+        elapsed_time = time.time() - start_time
+        fuel_left = max(0, 100 - int((elapsed_time / total_fuel_time) * 100))
 
-    pygame.display.flip()
-    clock.tick(100)
+        if fuel_left <= 0:
+            if current_score > high_score:
+                high_score = current_score
+                save_high_score(high_score)
+            draw_game_over(current_score)
+            return
+
+        display_score(current_score, high_score, fuel_left)
+        pygame.display.flip()
+        clock.tick(100)
+
+# Flow: Menu → Instructions → Game
+draw_menu()
+if wait_for_play_click(menu_play_button_rect):
+    draw_instructions()
+    if wait_for_play_click(instructions_play_button_rect):
+        run_game()
+
 
 pygame.quit()
