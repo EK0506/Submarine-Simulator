@@ -41,8 +41,8 @@ fish_speed = 4
 clock = pygame.time.Clock()
 
 # Spawning probabilities per level
-plastic_chance = {1: 1, 2: 3, 3: 6}
-fish_chance = {1: 10, 2: 5, 3: 2}
+plastic_chance = {1: 0, 2: 1, 3: 3}
+fish_chance = {1: 10, 2: 8, 3: 3}
 
 def draw_menu():
     window.fill(white)
