@@ -40,13 +40,11 @@ fish_width = fish_height = 30
 fish_speed = 4
 
 
-<<<<<<< HEAD
 # Spawning probabilities per level
 plastic_chance = {1: 0, 2: 1, 3: 3}
-fish_chance = {1: 10, 2: 8, 3: 3}
-=======
+fish_chance = {1: 8, 2: 6, 3: 3}
 clock = pygame.time.Clock()
->>>>>>> parent of 2f16ee7 (Update global citizen game.py)
+
 
 def draw_menu():
     window.fill(white)
@@ -130,8 +128,16 @@ def wait_for_play_click(button_rect):
                     return True
         clock.tick(60)
 
+def draw_level_complete(level):
+    window.fill(white)
+    complete_text = title_font.render(f"Day {level} Complete!", True, black)
+    next_day_text = score_font.render("Preparing for the next dive...", True, black)
+    window.blit(complete_text, (screen_width // 2 - complete_text.get_width() // 2, 150))
+    window.blit(next_day_text, (screen_width // 2 - next_day_text.get_width() // 2, 250))
+    pygame.display.flip()
+    pygame.time.wait(3000)
 
-def run_game():
+def run_game(level):
     total_fuel_time = 60
     ship_x = 50
     ship_y = screen_height // 2
@@ -148,7 +154,7 @@ def run_game():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                return
+                return None  # Exit signal
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP] and ship_y > 0:
@@ -159,7 +165,7 @@ def run_game():
         ship_rect = pygame.Rect(ship_x, ship_y, ship_width, ship_height)
         pygame.draw.rect(window, brown, ship_rect)
 
-        if random.randint(1, 100) == 1:
+        if random.randint(1, 100) <= plastic_chance.get(level, 0):
             plastics.append(spawn_plastic())
         for plastic in plastics[:]:
             plastic.x -= plastic_speed
@@ -170,7 +176,7 @@ def run_game():
                 pygame.draw.rect(window, red, plastic)
         plastics = [p for p in plastics if p.x + plastic_width > 0]
 
-        if random.randint(1, 80) == 1:
+        if random.randint(1, 200) <= fish_chance.get(level, 0):
             fish_list.append(spawn_fish())
         for fish in fish_list[:]:
             fish.x -= fish_speed
@@ -186,21 +192,38 @@ def run_game():
 
         if fuel_left <= 0:
             if current_score > high_score:
-                high_score = current_score
-                save_high_score(high_score)
-            draw_game_over(current_score)
-            return
+                save_high_score(current_score)
+            return current_score  # Level complete
 
         display_score(current_score, high_score, fuel_left)
+        level_text = score_font.render("Day: " + str(level), True, white)
+        window.blit(level_text, [screen_width - 200, 100])
+
         pygame.display.flip()
         clock.tick(100)
+
+def run_all_levels():
+    total_score = 0
+    max_level = 3
+    for level in range(1, max_level + 1):
+        score = run_game(level)
+        if score is None:
+            return  # Quit early
+        total_score += score
+        if level < max_level:
+            draw_level_complete(level)
+        else:
+            draw_game_over(total_score)
+
 
 # Flow: Menu → Instructions → Game
 draw_menu()
 if wait_for_play_click(menu_play_button_rect):
     draw_instructions()
     if wait_for_play_click(instructions_play_button_rect):
-        run_game()
+        run_all_levels()
+pygame.quit()
+
 
 
 pygame.quit()
