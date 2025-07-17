@@ -223,7 +223,3 @@ if wait_for_play_click(menu_play_button_rect):
     if wait_for_play_click(instructions_play_button_rect):
         run_all_levels()
 pygame.quit()
-
-
-
-pygame.quit()
