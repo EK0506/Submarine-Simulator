@@ -9,6 +9,8 @@ screen_width = 800
 screen_height = 500
 window = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Submarine Simulator")
+bg = pygame.image.load('bg.png') # Load background image
+bg = pygame.transform.smoothscale(bg, (screen_width, screen_height)) # Scale background image to fit screen sizeresize background image to fit screen size
 
 # Colours
 light_blue = (173, 216, 230)
@@ -27,18 +29,16 @@ play_text = title_font.render("PLAY", True, black)
 menu_play_button_rect = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 100, 200, 60)
 instructions_play_button_rect = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 180, 200, 60)
 
-
 # Game variables
 ship_width = 50
 ship_height = 30
-ship_velocity = 4
+ship_velocity = 10
 
 plastic_width = plastic_height = 30
-plastic_speed = 3
+plastic_speed = 5
 
 fish_width = fish_height = 30
-fish_speed = 4
-
+fish_speed = 6
 
 # Spawning probabilities per level
 plastic_chance = {1: 0, 2: 1, 3: 3}
@@ -138,10 +138,10 @@ def draw_level_complete(level):
     pygame.time.wait(3000)
 
 def run_game(level):
-    total_fuel_time = 60
-    ship_x = 50
-    ship_y = screen_height // 2
-    current_score = 0
+    total_fuel_time = 40 #time(s) of fuel lasts
+    ship_x = 50 #Initial submarine x position
+    ship_y = screen_height // 2 #Initial submarine y position
+    current_score = 0 #initial score
     plastics = []
     fish_list = []
 
@@ -150,51 +150,64 @@ def run_game(level):
     running = True
 
     while running:
-        window.fill(light_blue)
+        window.blit(bg, (0, 0)) 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                return None  # Exit signal
+                return None
 
+        # Sub movement
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_UP] and ship_y > 0:
-            ship_y -= ship_velocity
-        if keys[pygame.K_DOWN] and ship_y + ship_height < screen_height:
-            ship_y += ship_velocity
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+            if ship_y > -50 :
+                ship_y -= ship_velocity
+        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            if ship_y + ship_height < screen_height - 60:
+                ship_y += ship_velocity
 
-        ship_rect = pygame.Rect(ship_x, ship_y, ship_width, ship_height)
-        pygame.draw.rect(window, brown, ship_rect)
+        # Load & draw submarine
+        sub_image = pygame.image.load("submarine.png").convert_alpha()
+        resized_ship = pygame.transform.smoothscale(sub_image, [150, 150])
+        window.blit(resized_ship, (ship_x, ship_y))
 
+        # Custom hitbox — adjust to match vector shape
+        ship_hitbox = pygame.Rect(ship_x + 23, ship_y + 43, 110, 63)
+        pygame.draw.rect(window, (0, 255, 0), ship_hitbox, 2)  # Debug outline
+
+        # Plastic spawning and collision
         if random.randint(1, 100) <= plastic_chance.get(level, 0):
             plastics.append(spawn_plastic())
         for plastic in plastics[:]:
             plastic.x -= plastic_speed
-            if ship_rect.colliderect(plastic):
+            if ship_hitbox.colliderect(plastic):
                 plastics.remove(plastic)
                 total_fuel_time -= 3
             else:
                 pygame.draw.rect(window, red, plastic)
         plastics = [p for p in plastics if p.x + plastic_width > 0]
 
+        # Fish spawning and collision
         if random.randint(1, 200) <= fish_chance.get(level, 0):
             fish_list.append(spawn_fish())
         for fish in fish_list[:]:
             fish.x -= fish_speed
-            if ship_rect.colliderect(fish):
+            if ship_hitbox.colliderect(fish):
                 current_score += 1
                 fish_list.remove(fish)
             else:
                 pygame.draw.rect(window, blue, fish)
         fish_list = [f for f in fish_list if f.x + fish_width > 0]
 
+        # Fuel calculations
         elapsed_time = time.time() - start_time
         fuel_left = max(0, 100 - int((elapsed_time / total_fuel_time) * 100))
 
         if fuel_left <= 0:
             if current_score > high_score:
                 save_high_score(current_score)
-            return current_score  # Level complete
+            return current_score
 
+        # HUD
         display_score(current_score, high_score, fuel_left)
         level_text = score_font.render("Day: " + str(level), True, white)
         window.blit(level_text, [screen_width - 200, 100])
