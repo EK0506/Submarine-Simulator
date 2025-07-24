@@ -5,12 +5,17 @@ import time
 pygame.init()
 
 # Screen setup
-screen_width = 800
-screen_height = 500
+screen_width = 900
+screen_height = 506
 window = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Submarine Simulator")
-bg = pygame.image.load('bg.png') # Load background image
-bg = pygame.transform.smoothscale(bg, (screen_width, screen_height)) # Scale background image to fit screen sizeresize background image to fit screen size
+menubg_image = pygame.image.load('menubg.png')
+menubg = pygame.transform.smoothscale(menubg_image, (screen_width, screen_height))
+bg_image = pygame.image.load('bg.png') # Load background image
+bg = pygame.transform.smoothscale(bg_image, (screen_width, screen_height)) # Scale background image to fit screen sizeresize background image to fit screen size
+playbtn_image = pygame.image.load("playbutton.png").convert_alpha()
+playbtn = pygame.transform.smoothscale(playbtn_image, (250, 80))  # Match original button size
+
 
 # Colours
 light_blue = (173, 216, 230)
@@ -47,15 +52,11 @@ clock = pygame.time.Clock()
 
 
 def draw_menu():
-    window.fill(white)
-    title_text = title_font.render("Submarine Game", True, black)
-    window.blit(title_text, (screen_width // 2 - title_text.get_width() // 2, 150))
-    pygame.draw.rect(window, blue, menu_play_button_rect)
-    play_text = title_font.render("PLAY", True, black)
-    play_button_rect = pygame.Rect(screen_width // 2 - 100, (screen_height + 100) // 2 + 60, 200, 50)
-    window.blit(play_text, (play_button_rect.centerx - play_text.get_width() // 2,
-                            play_button_rect.centery - play_text.get_height() // 2))
+    window.blit(menubg, (0, 0))  # Draw the menu background
+    window.blit(playbtn, (menu_play_button_rect.x - 120, menu_play_button_rect.y - 30 ))
     pygame.display.flip()
+
+
 
 def draw_instructions():
     window.fill(white)
