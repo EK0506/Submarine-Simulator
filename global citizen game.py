@@ -17,6 +17,7 @@ playbtn_image = pygame.image.load("playbutton.png").convert_alpha()
 playbtn = pygame.transform.smoothscale(playbtn_image, (250, 80))  # Match original button size
 playbtnhover_image = pygame.image.load("playbutton_hover.png").convert_alpha()
 playbtn_hover = pygame.transform.smoothscale(playbtnhover_image, (250, 80))  
+ 
 # Colours
 light_blue = (173, 216, 230)
 brown = (102, 51, 0)
@@ -36,16 +37,17 @@ menu_play_button_rect = pygame.Rect(screen_width // 2 - 170, screen_height // 2 
 instructions_play_button_rect = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 180, 200, 60)
 
 # Game variables
-ship_width = 50
-ship_height = 30
+ship_width = 60
+ship_height = 40
 ship_velocity = 10
 
-plastic_width = plastic_height = 30
+plastic_width = 65
+plastic_height = 65
 plastic_speed = 5
 
-fish_width = 70
-fish_height = 50
-fish_speed = 6
+fish_width = 90
+fish_height = 60
+fish_speed = 7
 
 #Fish Image
 fish_images = [
@@ -59,6 +61,16 @@ fish_images = [
 
 #Resize fish images
 scaled_fish_images = [pygame.transform.smoothscale(img, (fish_width, fish_height)) for img in fish_images]
+
+#Rubbish Image
+plastic_image = [
+    pygame.image.load("p1.png").convert_alpha(),
+    pygame.image.load("p2.png").convert_alpha(),
+    pygame.image.load("p3.png").convert_alpha(),
+    pygame.image.load("p4.png").convert_alpha(),      
+]
+
+scaled_plastic_images = [pygame.transform.smoothscale(img, (plastic_width, plastic_height)) for img in plastic_image]
 
 
 # Spawning probabilities per level
@@ -208,17 +220,17 @@ def run_game(level):
 
         # Plastic spawning and collision
         if random.randint(1, 100) <= plastic_chance.get(level, 0):
-            plastics.append(spawn_plastic())
-        for plastic in plastics[:]:
-            plastic.x -= plastic_speed
-            # Draw plastic before collision check so it's visible on screen
-            pygame.draw.rect(window, red, plastic) 
-            if ship_hitbox.colliderect(plastic):
-                plastics.remove(plastic)
-                total_fuel_time -= 3
-        # Ensure plastics that are off-screen are removed
-        plastics = [p for p in plastics if p.x + plastic_width > 0]
+            plastics.append((spawn_plastic(), random.choice(scaled_plastic_images)))  # Store rect and image
 
+        # Move plastics and check for collisions
+        for i, (plastic_rect, plastic_img) in enumerate(plastics[:]):
+            plastic_rect.x -= plastic_speed
+            window.blit(plastic_img, plastic_rect.topleft)
+            if ship_hitbox.colliderect(plastic_rect):
+                total_fuel_time -= 3
+                plastics.pop(i)
+        # Remove plastics that moved off-screen
+        plastics = [(r, img) for (r, img) in plastics if r.x + plastic_width > 0]
 
         # Fish spawning and collision
         if random.randint(1, 200) <= fish_chance.get(level, 0):
@@ -243,8 +255,8 @@ def run_game(level):
 
         # HUD
         display_score(current_score, high_score, fuel_left)
-        level_text = score_font.render("Day: " + str(level), True, white)
-        window.blit(level_text, [screen_width - 200, 100])
+        level_text = score_font.render("Day " + str(level), True, white)
+        window.blit(level_text, [screen_width//2 - 50, 50])
 
         pygame.display.flip()
         clock.tick(100)
