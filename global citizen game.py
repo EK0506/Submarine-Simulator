@@ -9,13 +9,13 @@ screen_width = 900
 screen_height = 506
 window = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Submarine Simulator")
-menubg_image = pygame.image.load('menubg.png')
+menubg_image = pygame.image.load('img/menubg.png')
 menubg = pygame.transform.smoothscale(menubg_image, (screen_width, screen_height))
-bg_image = pygame.image.load('bg.png') # Load background image
+bg_image = pygame.image.load('img/bg.png') # Load background image
 bg = pygame.transform.smoothscale(bg_image, (screen_width, screen_height)) # Scale background image to fit screen sizeresize background image to fit screen size
-playbtn_image = pygame.image.load("playbutton.png").convert_alpha()
+playbtn_image = pygame.image.load("img/playbutton.png").convert_alpha()
 playbtn = pygame.transform.smoothscale(playbtn_image, (250, 80))  # Match original button size
-playbtnhover_image = pygame.image.load("playbutton_hover.png").convert_alpha()
+playbtnhover_image = pygame.image.load("img/playbutton_hover.png").convert_alpha()
 playbtn_hover = pygame.transform.smoothscale(playbtnhover_image, (250, 80))  
  
 # Colours
@@ -27,13 +27,13 @@ white = (255, 255, 255)
 black = (0, 0, 0)
 
 # Fonts
-title_font = pygame.font.Font(None, 74)
+title_font = pygame.font.Font(None, 60)
 score_font = pygame.font.Font(None, 36)
 
 # Game assets
-play_text = title_font.render("PLAY", True, black)
+play_text = title_font.render("Continue", True, black)
 # Adjusted button rects to match the scaled image size
-menu_play_button_rect = pygame.Rect(screen_width // 2 - 170, screen_height // 2 - 20 + 70, 250, 80) 
+play_button_rect = pygame.Rect(screen_width // 2 - 170, screen_height // 2 - 20 + 70, 300, 80) 
 instructions_play_button_rect = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 180, 200, 60)
 
 # Game variables
@@ -41,35 +41,35 @@ ship_width = 60
 ship_height = 40
 ship_velocity = 10
 
-plastic_width = 65
+plastic_width = 80
 plastic_height = 65
 plastic_speed = 5
 
-fish_width = 90
+fish_width = 85
 fish_height = 60
 fish_speed = 7
 
 #Fish Image
 fish_images = [
-    pygame.image.load("f1.png").convert_alpha(),
-    pygame.image.load("f2.png").convert_alpha(),
-    pygame.image.load("f3.png").convert_alpha(),
-    pygame.image.load("f4.png").convert_alpha(),    
-    pygame.image.load("f5.png").convert_alpha(),    
-    pygame.image.load("f6.png").convert_alpha(),    
+    pygame.image.load("img/fish/f1.png").convert_alpha(),
+    pygame.image.load("img/fish/f2.png").convert_alpha(),
+    pygame.image.load("img/fish/f3.png").convert_alpha(),
+    pygame.image.load("img/fish/f4.png").convert_alpha(),    
+    pygame.image.load("img/fish/f5.png").convert_alpha(),    
+    pygame.image.load("img/fish/f6.png").convert_alpha(),
+    pygame.image.load("img/fish/f7.png").convert_alpha(),
+    pygame.image.load("img/fish/f8.png").convert_alpha(),
 ]
-
 #Resize fish images
 scaled_fish_images = [pygame.transform.smoothscale(img, (fish_width, fish_height)) for img in fish_images]
 
 #Rubbish Image
 plastic_image = [
-    pygame.image.load("p1.png").convert_alpha(),
-    pygame.image.load("p2.png").convert_alpha(),
-    pygame.image.load("p3.png").convert_alpha(),
-    pygame.image.load("p4.png").convert_alpha(),      
+    pygame.image.load("img/rubbish/p1.png").convert_alpha(),
+    pygame.image.load("img/rubbish/p2.png").convert_alpha(),
+    pygame.image.load("img/rubbish/p3.png").convert_alpha(),
+    pygame.image.load("img/rubbish/p4.png").convert_alpha(),   
 ]
-
 scaled_plastic_images = [pygame.transform.smoothscale(img, (plastic_width, plastic_height)) for img in plastic_image]
 
 
@@ -83,36 +83,58 @@ def draw_menu():
     mouse_pos = pygame.mouse.get_pos()
     
     # Check if mouse is over the play button
-    if menu_play_button_rect.collidepoint(mouse_pos):
-        window.blit(playbtn_hover, menu_play_button_rect.topleft) # Blit at the rect's top-left
+    if play_button_rect.collidepoint(mouse_pos):
+        window.blit(playbtn_hover, play_button_rect.topleft) # Blit at the rect's top-left
     else:
-        window.blit(playbtn, menu_play_button_rect.topleft) # Blit at the rect's top-left
+        window.blit(playbtn, play_button_rect.topleft) # Blit at the rect's top-left
 
     pygame.display.flip()
 
 
-def draw_instructions():
-    window.fill(white)
-    institle_text = title_font.render("Instructions", True, black)
+def draw_backstory():
+    window.fill(black)
+    institle_text = title_font.render("Mission Briefing", True, white)
     window.blit(institle_text, (screen_width // 2 - institle_text.get_width() // 2, 50))
-    
+
     lines = [
-        "Use UP and DOWN arrow keys to move.",
-        "Avoid plastic waste (red) — it reduces fuel.",
-        "Catch fish (blue) — it gives you points!",
-        "Catch as much fish as possible before fuel runs out!",
-        "Click PLAY to begin!"
+        "You are an oceanographic researcher.",
+        "Each year, you're assigned to observe marine life.",
+        "Your submarine is equipped for exploration — but not forever.",
+        "Fuel is limited. So is time.",
+        "Make each dive count."
     ]
     for i, line in enumerate(lines):
-        text = score_font.render(line, True, black)
+        text = score_font.render(line, True, white)
         window.blit(text, (100, 150 + i * 40))
-    
-    # You might want to make the instructions play button also have a hover effect
-    # For simplicity, keeping it as a colored rect for now.
+
+    # Button to continue to tutorial
     pygame.draw.rect(window, blue, instructions_play_button_rect)
     window.blit(play_text, (instructions_play_button_rect.centerx - play_text.get_width() // 2,
                             instructions_play_button_rect.centery - play_text.get_height() // 2))
     pygame.display.flip()
+
+
+def draw_tutorial():
+    window.fill(black)
+    institle_text = title_font.render("Controls & Objective", True, white)
+    window.blit(institle_text, (screen_width // 2 - institle_text.get_width() // 2, 50))
+
+    lines = [
+        "Use the UP and DOWN arrow keys (or W/S) to move.",
+        "Avoid plastic waste — it consumes your fuel!",
+        "Catch as many fish as possible before your fuel runs out.",
+        "Each dive is one day of your mission.",
+        "Good luck, explorer.",
+    ]
+    for i, line in enumerate(lines):
+        text = score_font.render(line, True, white)
+        window.blit(text, (100, 150 + i * 40))
+
+    pygame.draw.rect(window, blue, instructions_play_button_rect)
+    window.blit(play_text, (instructions_play_button_rect.centerx - play_text.get_width() // 2,
+                            instructions_play_button_rect.centery - play_text.get_height() // 2))
+    pygame.display.flip()
+
 
 def draw_game_over(score):
     window.fill(white)
@@ -209,14 +231,13 @@ def run_game(level):
                 ship_y += ship_velocity
 
         # Load & draw submarine
-        sub_image = pygame.image.load("submarine.png").convert_alpha()
+        sub_image = pygame.image.load("img/submarine.png").convert_alpha()
         resized_ship = pygame.transform.smoothscale(sub_image, [150, 150])
         window.blit(resized_ship, (ship_x, ship_y))
 
-        # Custom hitbox — adjust to match vector shape
-        # ship_hitbox = pygame.Rect(ship_x + 23, ship_y + 43, 110, 63) # Original hitbox
-        ship_hitbox = pygame.Rect(ship_x + 35, ship_y + 60, 90, 40) # A bit tighter hitbox
-        # pygame.draw.rect(window, (0, 255, 0), ship_hitbox, 2)  # Debug outline - uncomment to see
+        # Ship hitbox 
+        ship_hitbox = pygame.Rect(ship_x + 20, ship_y + 45, 110, 60) 
+        #pygame.draw.rect(window, (0, 255, 0), ship_hitbox, 2)  # Debug outline - uncomment to see
 
         # Plastic spawning and collision
         if random.randint(1, 100) <= plastic_chance.get(level, 0):
@@ -277,25 +298,32 @@ def run_all_levels():
 
 # Main Game Loop / Flow
 # Loop to handle the menu state continuously
-game_state = "menu" # "menu", "instructions", "game"
+game_state = "menu"
 
 while True:
     if game_state == "menu":
         draw_menu()
-        if wait_for_play_click(menu_play_button_rect, draw_menu):
-            game_state = "instructions"
-        else: # User quit during menu
+        if wait_for_play_click(play_button_rect, draw_menu):
+            game_state = "backstory"
+        else:
             break
-    elif game_state == "instructions":
-        draw_instructions()
-        if wait_for_play_click(instructions_play_button_rect, draw_instructions):
+    elif game_state == "backstory":
+        draw_backstory()
+        if wait_for_play_click(instructions_play_button_rect, draw_backstory):
+            game_state = "tutorial"
+        else:
+            break
+    elif game_state == "tutorial":
+        draw_tutorial()
+        if wait_for_play_click(instructions_play_button_rect, draw_tutorial):
             game_state = "game"
-        else: # User quit during instructions
+        else:
             break
     elif game_state == "game":
         run_all_levels()
-        game_state = "quit" 
+        game_state = "quit"
     elif game_state == "quit":
         break
 
+# Exit the game
 pygame.quit()
