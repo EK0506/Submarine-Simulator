@@ -15,8 +15,8 @@ bg_image = pygame.image.load('bg.png') # Load background image
 bg = pygame.transform.smoothscale(bg_image, (screen_width, screen_height)) # Scale background image to fit screen sizeresize background image to fit screen size
 playbtn_image = pygame.image.load("playbutton.png").convert_alpha()
 playbtn = pygame.transform.smoothscale(playbtn_image, (250, 80))  # Match original button size
-
-
+playbtnhover_image = pygame.image.load("playbutton_hover.png").convert_alpha()
+playbtn_hover = pygame.transform.smoothscale(playbtnhover_image, (250, 80))  
 # Colours
 light_blue = (173, 216, 230)
 brown = (102, 51, 0)
@@ -31,7 +31,8 @@ score_font = pygame.font.Font(None, 36)
 
 # Game assets
 play_text = title_font.render("PLAY", True, black)
-menu_play_button_rect = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 100, 200, 60)
+# Adjusted button rects to match the scaled image size
+menu_play_button_rect = pygame.Rect(screen_width // 2 - 170, screen_height // 2 - 20 + 70, 250, 80) 
 instructions_play_button_rect = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 180, 200, 60)
 
 # Game variables
@@ -42,20 +43,40 @@ ship_velocity = 10
 plastic_width = plastic_height = 30
 plastic_speed = 5
 
-fish_width = fish_height = 30
+fish_width = 70
+fish_height = 50
 fish_speed = 6
+
+#Fish Image
+fish_images = [
+    pygame.image.load("f1.png").convert_alpha(),
+    pygame.image.load("f2.png").convert_alpha(),
+    pygame.image.load("f3.png").convert_alpha(),
+    pygame.image.load("f4.png").convert_alpha(),    
+    pygame.image.load("f5.png").convert_alpha(),    
+    pygame.image.load("f6.png").convert_alpha(),    
+]
+
+#Resize fish images
+scaled_fish_images = [pygame.transform.smoothscale(img, (fish_width, fish_height)) for img in fish_images]
+
 
 # Spawning probabilities per level
 plastic_chance = {1: 0, 2: 1, 3: 3}
 fish_chance = {1: 8, 2: 6, 3: 3}
 clock = pygame.time.Clock()
 
-
 def draw_menu():
-    window.blit(menubg, (0, 0))  # Draw the menu background
-    window.blit(playbtn, (menu_play_button_rect.x - 120, menu_play_button_rect.y - 30 ))
-    pygame.display.flip()
+    window.blit(menubg, (0, 0))  # Background
+    mouse_pos = pygame.mouse.get_pos()
+    
+    # Check if mouse is over the play button
+    if menu_play_button_rect.collidepoint(mouse_pos):
+        window.blit(playbtn_hover, menu_play_button_rect.topleft) # Blit at the rect's top-left
+    else:
+        window.blit(playbtn, menu_play_button_rect.topleft) # Blit at the rect's top-left
 
+    pygame.display.flip()
 
 
 def draw_instructions():
@@ -74,11 +95,12 @@ def draw_instructions():
         text = score_font.render(line, True, black)
         window.blit(text, (100, 150 + i * 40))
     
+    # You might want to make the instructions play button also have a hover effect
+    # For simplicity, keeping it as a colored rect for now.
     pygame.draw.rect(window, blue, instructions_play_button_rect)
     window.blit(play_text, (instructions_play_button_rect.centerx - play_text.get_width() // 2,
                             instructions_play_button_rect.centery - play_text.get_height() // 2))
     pygame.display.flip()
-
 
 def draw_game_over(score):
     window.fill(white)
@@ -118,16 +140,24 @@ def save_high_score(high_score):
     with open("high_score.txt", "w") as f:
         f.write(str(high_score))
 
-def wait_for_play_click(button_rect):
-    while True:
+def wait_for_play_click(button_rect, screen_drawing_function):
+    """
+    Waits for a click on the given button, continuously drawing the screen
+    using the provided screen_drawing_function.
+    """
+    waiting = True
+    while waiting:
+        screen_drawing_function() # Continuously draw the current screen (menu or instructions)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if button_rect.collidepoint(event.pos):
-                    return True
-        clock.tick(60)
+                    waiting = False
+        clock.tick(60) # Control the frame rate
+
+    return True
 
 def draw_level_complete(level):
     window.fill(white)
@@ -172,32 +202,35 @@ def run_game(level):
         window.blit(resized_ship, (ship_x, ship_y))
 
         # Custom hitbox — adjust to match vector shape
-        ship_hitbox = pygame.Rect(ship_x + 23, ship_y + 43, 110, 63)
-        pygame.draw.rect(window, (0, 255, 0), ship_hitbox, 2)  # Debug outline
+        # ship_hitbox = pygame.Rect(ship_x + 23, ship_y + 43, 110, 63) # Original hitbox
+        ship_hitbox = pygame.Rect(ship_x + 35, ship_y + 60, 90, 40) # A bit tighter hitbox
+        # pygame.draw.rect(window, (0, 255, 0), ship_hitbox, 2)  # Debug outline - uncomment to see
 
         # Plastic spawning and collision
         if random.randint(1, 100) <= plastic_chance.get(level, 0):
             plastics.append(spawn_plastic())
         for plastic in plastics[:]:
             plastic.x -= plastic_speed
+            # Draw plastic before collision check so it's visible on screen
+            pygame.draw.rect(window, red, plastic) 
             if ship_hitbox.colliderect(plastic):
                 plastics.remove(plastic)
                 total_fuel_time -= 3
-            else:
-                pygame.draw.rect(window, red, plastic)
+        # Ensure plastics that are off-screen are removed
         plastics = [p for p in plastics if p.x + plastic_width > 0]
+
 
         # Fish spawning and collision
         if random.randint(1, 200) <= fish_chance.get(level, 0):
-            fish_list.append(spawn_fish())
-        for fish in fish_list[:]:
-            fish.x -= fish_speed
-            if ship_hitbox.colliderect(fish):
+            fish_list.append((spawn_fish(), random.choice(scaled_fish_images))) # Store rect and image
+        for i, (fish_rect, fish_img) in enumerate(fish_list[:]):
+            fish_rect.x -= fish_speed
+            window.blit(fish_img, fish_rect.topleft) # Draw the fish image
+            if ship_hitbox.colliderect(fish_rect):
                 current_score += 1
-                fish_list.remove(fish)
-            else:
-                pygame.draw.rect(window, blue, fish)
-        fish_list = [f for f in fish_list if f.x + fish_width > 0]
+                fish_list.pop(i) # Remove by index as it's a list of tuples
+        fish_list = [f for f in fish_list if f[0].x + fish_width > 0] # Filter by the rect's x-coordinate
+
 
         # Fuel calculations
         elapsed_time = time.time() - start_time
@@ -230,10 +263,27 @@ def run_all_levels():
             draw_game_over(total_score)
 
 
-# Flow: Menu → Instructions → Game
-draw_menu()
-if wait_for_play_click(menu_play_button_rect):
-    draw_instructions()
-    if wait_for_play_click(instructions_play_button_rect):
+# Main Game Loop / Flow
+# Loop to handle the menu state continuously
+game_state = "menu" # "menu", "instructions", "game"
+
+while True:
+    if game_state == "menu":
+        draw_menu()
+        if wait_for_play_click(menu_play_button_rect, draw_menu):
+            game_state = "instructions"
+        else: # User quit during menu
+            break
+    elif game_state == "instructions":
+        draw_instructions()
+        if wait_for_play_click(instructions_play_button_rect, draw_instructions):
+            game_state = "game"
+        else: # User quit during instructions
+            break
+    elif game_state == "game":
         run_all_levels()
+        game_state = "quit" 
+    elif game_state == "quit":
+        break
+
 pygame.quit()
