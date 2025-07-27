@@ -9,14 +9,36 @@ screen_width = 900
 screen_height = 506
 window = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Submarine Simulator")
-menubg_image = pygame.image.load('img/menubg.png')
+
+"""Images"""
+#Menu background 
+menubg_image = pygame.image.load('img/menubg.png') 
 menubg = pygame.transform.smoothscale(menubg_image, (screen_width, screen_height))
+#Game background
 bg_image = pygame.image.load('img/bg.png') # Load background image
 bg = pygame.transform.smoothscale(bg_image, (screen_width, screen_height)) # Scale background image to fit screen sizeresize background image to fit screen size
+bg_image2 = pygame.image.load('img/bg2.png') # Load background image for level 2
+bg2 = pygame.transform.smoothscale(bg_image2, (screen_width, screen_height)) # Scale background image to fit screen size    
+bg_image3 = pygame.image.load('img/bg3.png') # Load background image for level 3
+bg3 = pygame.transform.smoothscale(bg_image3, (screen_width, screen_height)) # Scale background image to fit screen size
+
 playbtn_image = pygame.image.load("img/playbutton.png").convert_alpha()
 playbtn = pygame.transform.smoothscale(playbtn_image, (250, 80))  # Match original button size
 playbtnhover_image = pygame.image.load("img/playbutton_hover.png").convert_alpha()
 playbtn_hover = pygame.transform.smoothscale(playbtnhover_image, (250, 80))  
+
+# Game variables
+ship_width = 60
+ship_height = 40
+ship_velocity = 10
+
+plastic_width = 80
+plastic_height = 65
+plastic_speed = 5
+
+fish_width = 85
+fish_height = 60
+fish_speed = 7
  
 # Colours
 light_blue = (173, 216, 230)
@@ -36,18 +58,9 @@ play_text = title_font.render("Continue", True, black)
 play_button_rect = pygame.Rect(screen_width // 2 - 170, screen_height // 2 - 20 + 70, 300, 80) 
 instructions_play_button_rect = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 180, 200, 60)
 
-# Game variables
-ship_width = 60
-ship_height = 40
-ship_velocity = 10
-
-plastic_width = 80
-plastic_height = 65
-plastic_speed = 5
-
-fish_width = 85
-fish_height = 60
-fish_speed = 7
+#Sound Effect
+btn_sound = pygame.mixer.Sound("sound/button.mp3")
+collect_sound = pygame.mixer.Sound("sound/collect.wav")
 
 #Fish Image
 fish_images = [
@@ -71,8 +84,6 @@ plastic_image = [
     pygame.image.load("img/rubbish/p4.png").convert_alpha(),   
 ]
 scaled_plastic_images = [pygame.transform.smoothscale(img, (plastic_width, plastic_height)) for img in plastic_image]
-
-
 # Spawning probabilities per level
 plastic_chance = {1: 0, 2: 1, 3: 3}
 fish_chance = {1: 8, 2: 6, 3: 3}
@@ -188,6 +199,7 @@ def wait_for_play_click(button_rect, screen_drawing_function):
                 return False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if button_rect.collidepoint(event.pos):
+                    pygame.mixer.Sound.play(btn_sound)
                     waiting = False
         clock.tick(60) # Control the frame rate
 
@@ -215,7 +227,13 @@ def run_game(level):
     running = True
 
     while running:
-        window.blit(bg, (0, 0)) 
+        if level == 1:
+            window.blit(bg, (0, 0)) 
+        elif level == 2:
+            window.blit(bg2, (0, 0))
+        elif level == 3:
+            window.blit(bg3, (0, 0))
+            
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -260,6 +278,7 @@ def run_game(level):
             fish_rect.x -= fish_speed
             window.blit(fish_img, fish_rect.topleft) # Draw the fish image
             if ship_hitbox.colliderect(fish_rect):
+                pygame.mixer.Sound.play(collect_sound)
                 current_score += 1
                 fish_list.pop(i) # Remove by index as it's a list of tuples
         fish_list = [f for f in fish_list if f[0].x + fish_width > 0] # Filter by the rect's x-coordinate
