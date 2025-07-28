@@ -247,6 +247,12 @@ def run_game(level):
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             if ship_y + ship_height < screen_height - 60:
                 ship_y += ship_velocity
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            if ship_x > 0:
+                ship_x -= ship_velocity
+        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            if ship_x + ship_width < screen_width // 3:
+                ship_x += ship_velocity
 
         # Load & draw submarine
         sub_image = pygame.image.load("img/submarine.png").convert_alpha()
