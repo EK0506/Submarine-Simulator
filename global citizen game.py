@@ -3,6 +3,7 @@ import random
 import time
 
 pygame.init()
+pygame.font.init()
 
 # Screen setup
 screen_width = 900
@@ -12,20 +13,35 @@ pygame.display.set_caption("Submarine Simulator")
 
 """Images"""
 #Menu background 
-menubg_image = pygame.image.load('img/menubg.png') 
+menubg_image = pygame.image.load('assets/img/menubg.png') # Load menu background image
 menubg = pygame.transform.smoothscale(menubg_image, (screen_width, screen_height))
+introbg_image = pygame.image.load('assets/img/introbg.png') # Load intro background image
+introbg = pygame.transform.smoothscale(introbg_image, (screen_width, screen_height)) # Scale intro background image to fit screen size
 #Game background
-bg_image = pygame.image.load('img/bg.png') # Load background image
+bg_image = pygame.image.load('assets/img/bg.png') # Load background image
 bg = pygame.transform.smoothscale(bg_image, (screen_width, screen_height)) # Scale background image to fit screen sizeresize background image to fit screen size
-bg_image2 = pygame.image.load('img/bg2.png') # Load background image for level 2
+bg_image2 = pygame.image.load('assets/img/bg2.png') # Load background image for level 2
 bg2 = pygame.transform.smoothscale(bg_image2, (screen_width, screen_height)) # Scale background image to fit screen size    
-bg_image3 = pygame.image.load('img/bg3.png') # Load background image for level 3
+bg_image3 = pygame.image.load('assets/img/bg3.png') # Load background image for level 3
 bg3 = pygame.transform.smoothscale(bg_image3, (screen_width, screen_height)) # Scale background image to fit screen size
 
-playbtn_image = pygame.image.load("img/playbutton.png").convert_alpha()
-playbtn = pygame.transform.smoothscale(playbtn_image, (250, 80))  # Match original button size
-playbtnhover_image = pygame.image.load("img/playbutton_hover.png").convert_alpha()
-playbtn_hover = pygame.transform.smoothscale(playbtnhover_image, (250, 80))  
+#Play button images
+playbtn_image = pygame.image.load("assets/img/playbutton.png").convert_alpha()
+playbtn_width = 250
+playbtn_height = 80
+playbtn = pygame.transform.smoothscale(playbtn_image, (playbtn_width, playbtn_height)) 
+
+#Play button hover image
+playbtnhover_image = pygame.image.load("assets/img/playbutton_hover.png").convert_alpha()
+playbtnhover_width = 250
+playbtnhover_height = 80
+playbtn_hover = pygame.transform.smoothscale(playbtnhover_image, (playbtnhover_width, playbtnhover_height))  
+
+# Score panel image
+score_panel_image = pygame.image.load("assets/img/score_panel.png").convert_alpha()
+score_panel_width = 220
+score_panel_height = 110
+scaled_score_panel = pygame.transform.smoothscale(score_panel_image, (score_panel_width, score_panel_height))
 
 # Game variables
 ship_width = 60
@@ -49,45 +65,80 @@ white = (255, 255, 255)
 black = (0, 0, 0)
 
 # Fonts
-title_font = pygame.font.Font(None, 60)
-score_font = pygame.font.Font(None, 36)
+cour = "assets/font/courier_new.ttf"  # Path to your font file
+premier = "assets/font/premier2019.ttf"  # Path to your font file
+font_size = 36 # Size in pixels
+title_font = pygame.font.Font(cour, 60)
+score_font = pygame.font.Font(premier, 30)
+context_font = pygame.font.Font(cour, 22)
+
 
 # Game assets
-play_text = title_font.render("Continue", True, black)
+play_text = context_font.render("Continue", True, black)
 # Adjusted button rects to match the scaled image size
 play_button_rect = pygame.Rect(screen_width // 2 - 170, screen_height // 2 - 20 + 70, 300, 80) 
 instructions_play_button_rect = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 180, 200, 60)
 
 #Sound Effect
-btn_sound = pygame.mixer.Sound("sound/button.mp3")
-collect_sound = pygame.mixer.Sound("sound/collect.wav")
+btn_sound = pygame.mixer.Sound("assets/sound/sound_effect/button.mp3")
+collect_sound = pygame.mixer.Sound("assets/sound/sound_effect/collect.wav")
 
 #Fish Image
 fish_images = [
-    pygame.image.load("img/fish/f1.png").convert_alpha(),
-    pygame.image.load("img/fish/f2.png").convert_alpha(),
-    pygame.image.load("img/fish/f3.png").convert_alpha(),
-    pygame.image.load("img/fish/f4.png").convert_alpha(),    
-    pygame.image.load("img/fish/f5.png").convert_alpha(),    
-    pygame.image.load("img/fish/f6.png").convert_alpha(),
-    pygame.image.load("img/fish/f7.png").convert_alpha(),
-    pygame.image.load("img/fish/f8.png").convert_alpha(),
+    pygame.image.load("assets/img/fish/f1.png").convert_alpha(),
+    pygame.image.load("assets/img/fish/f2.png").convert_alpha(),
+    pygame.image.load("assets/img/fish/f3.png").convert_alpha(),
+    pygame.image.load("assets/img/fish/f4.png").convert_alpha(),    
+    pygame.image.load("assets/img/fish/f5.png").convert_alpha(),    
+    pygame.image.load("assets/img/fish/f6.png").convert_alpha(),
+    pygame.image.load("assets/img/fish/f7.png").convert_alpha(),
+    pygame.image.load("assets/img/fish/f8.png").convert_alpha(),
 ]
 #Resize fish images
 scaled_fish_images = [pygame.transform.smoothscale(img, (fish_width, fish_height)) for img in fish_images]
 
 #Rubbish Image
 plastic_image = [
-    pygame.image.load("img/rubbish/p1.png").convert_alpha(),
-    pygame.image.load("img/rubbish/p2.png").convert_alpha(),
-    pygame.image.load("img/rubbish/p3.png").convert_alpha(),
-    pygame.image.load("img/rubbish/p4.png").convert_alpha(),   
+    pygame.image.load("assets/img/rubbish/p1.png").convert_alpha(),
+    pygame.image.load("assets/img/rubbish/p2.png").convert_alpha(),
+    pygame.image.load("assets/img/rubbish/p3.png").convert_alpha(),
+    pygame.image.load("assets/img/rubbish/p4.png").convert_alpha(),   
 ]
 scaled_plastic_images = [pygame.transform.smoothscale(img, (plastic_width, plastic_height)) for img in plastic_image]
+
 # Spawning probabilities per level
 plastic_chance = {1: 0, 2: 1, 3: 3}
 fish_chance = {1: 8, 2: 6, 3: 3}
 clock = pygame.time.Clock()
+
+intro_dialogue = [
+    "Ahoy, explorer! Welcome aboard.",
+    "You're on a mission to study the ocean's wonders.",
+    "Your goal is to collect fish data using the sub's sensors.",
+    "But keep your eyes open. The ocean is always changing...",
+]
+
+def typewriter_text(surface, text, font, color, x, y, speed=50):
+    displayed_text = ''
+    last_update = pygame.time.get_ticks()
+    index = 0
+
+    while index < len(text):
+        current_time = pygame.time.get_ticks()
+        if current_time - last_update >= speed:
+            displayed_text += text[index]
+            index += 1
+            last_update = current_time
+
+        # Redraw background and text area each frame
+        draw_story_screen_background(surface)
+        text_surface = font.render(displayed_text, True, color)
+        surface.blit(text_surface, (x, y))
+        pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
 
 def draw_menu():
     window.blit(menubg, (0, 0))  # Background
@@ -101,29 +152,31 @@ def draw_menu():
 
     pygame.display.flip()
 
+def draw_story_screen_background(surface):
+    surface.fill(black)
+    surface.blit(introbg, (0, 0))  # Or use a different bg
+    captain_img = pygame.image.load("assets/img/captain.png").convert_alpha()
+    captain_scaled = pygame.transform.smoothscale(captain_img, (180, 250))
+    surface.blit(captain_scaled, (screen_width - 280, screen_height - 300))
 
-def draw_backstory():
-    window.fill(black)
-    institle_text = title_font.render("Mission Briefing", True, white)
-    window.blit(institle_text, (screen_width // 2 - institle_text.get_width() // 2, 50))
+    # Draw dialogue box
+    pygame.draw.rect(surface, black, (50, screen_height - 120, screen_width - 100, 80))
+    pygame.draw.rect(surface, white, (50, screen_height - 120, screen_width - 100, 80), 2) #outline
 
-    lines = [
-        "You are an oceanographic researcher.",
-        "Each year, you're assigned to observe marine life.",
-        "Your submarine is equipped for exploration — but not forever.",
-        "Fuel is limited. So is time.",
-        "Make each dive count."
-    ]
-    for i, line in enumerate(lines):
-        text = score_font.render(line, True, white)
-        window.blit(text, (100, 150 + i * 40))
+def run_intro_dialogue(dialogues):
+    for line in dialogues:
+        typewriter_text(window, line, context_font, white, 60, screen_height - 100)
+        wait_for_key_press()
 
-    # Button to continue to tutorial
-    pygame.draw.rect(window, blue, instructions_play_button_rect)
-    window.blit(play_text, (instructions_play_button_rect.centerx - play_text.get_width() // 2,
-                            instructions_play_button_rect.centery - play_text.get_height() // 2))
-    pygame.display.flip()
-
+def wait_for_key_press():
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                waiting = False
 
 def draw_tutorial():
     window.fill(black)
@@ -138,7 +191,7 @@ def draw_tutorial():
         "Good luck, explorer.",
     ]
     for i, line in enumerate(lines):
-        text = score_font.render(line, True, white)
+        text = context_font.render(line, True, white)
         window.blit(text, (100, 150 + i * 40))
 
     pygame.draw.rect(window, blue, instructions_play_button_rect)
@@ -157,12 +210,15 @@ def draw_game_over(score):
     pygame.time.wait(3000)
 
 def display_score(score, high_score, fuel_percent):
-    score_text = score_font.render("Score: " + str(score), True, white)
-    high_score_text = score_font.render("High Score: " + str(high_score), True, white)
-    fuel_text = score_font.render("Fuel: " + str(int(fuel_percent)) + "%", True, white)
-    window.blit(score_text, [screen_width - 200, 10])
-    window.blit(high_score_text, [screen_width - 200, 40])
-    window.blit(fuel_text, [screen_width - 200, 70])
+    panel_x = screen_width - scaled_score_panel.get_width() - 10 # 10 pixels from right edge
+    panel_y = 10 # 10 pixels from top edge
+    window.blit(scaled_score_panel, (panel_x, panel_y))
+    score_text = score_font.render("Score    " + str(score), True, white)
+    high_score_text = score_font.render("Best Score " + str(high_score), True, white)
+    fuel_text = score_font.render("Fuel    " + str(int(fuel_percent)) + "%", True, white)
+    window.blit(score_text, [screen_width - 200, 14])
+    window.blit(high_score_text, [screen_width - 200, 44])
+    window.blit(fuel_text, [screen_width - 200, 74])
 
 def spawn_plastic():
     x = screen_width
@@ -255,7 +311,7 @@ def run_game(level):
                 ship_x += ship_velocity
 
         # Load & draw submarine
-        sub_image = pygame.image.load("img/submarine.png").convert_alpha()
+        sub_image = pygame.image.load("assets/img/submarine.png").convert_alpha()
         resized_ship = pygame.transform.smoothscale(sub_image, [150, 150])
         window.blit(resized_ship, (ship_x, ship_y))
 
@@ -329,15 +385,13 @@ while True:
     if game_state == "menu":
         draw_menu()
         if wait_for_play_click(play_button_rect, draw_menu):
-            game_state = "backstory"
+            game_state = "intro"
         else:
             break
-    elif game_state == "backstory":
-        draw_backstory()
-        if wait_for_play_click(instructions_play_button_rect, draw_backstory):
-            game_state = "tutorial"
-        else:
-            break
+    elif game_state == "intro":
+        run_intro_dialogue(intro_dialogue)
+        game_state = "tutorial"
+
     elif game_state == "tutorial":
         draw_tutorial()
         if wait_for_play_click(instructions_play_button_rect, draw_tutorial):
