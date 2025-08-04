@@ -32,8 +32,13 @@ small_font = pygame.font.Font(cour, 18)
 # Menu Backgrounds
 menubg_image = pygame.image.load('assets/img/menubg.png')
 menubg = pygame.transform.smoothscale(menubg_image, (screen_width, screen_height))
+#Intro Background
 introbg_image = pygame.image.load('assets/img/introbg.png')
 introbg = pygame.transform.smoothscale(introbg_image, (screen_width, screen_height))
+lv2introbg_image = pygame.image.load('assets/img/lv2_intro.png')
+lv2introbg = pygame.transform.smoothscale(lv2introbg_image, (screen_width, screen_height))
+lv3introbg_image = pygame.image.load('assets/img/lv3_intro.png')
+lv3introbg = pygame.transform.smoothscale(lv3introbg_image, (screen_width, screen_height))
 
 # Game Backgrounds
 bg_image = pygame.image.load('assets/img/bg.png')
@@ -46,6 +51,8 @@ bg3 = pygame.transform.smoothscale(bg_image3, (screen_width, screen_height))
 # Tutorial Image
 tutorial_image_raw = pygame.image.load('assets/img/tutorial.png')
 tutorial_image = pygame.transform.smoothscale(tutorial_image_raw, (screen_width, screen_height))
+tutorial_image2_raw = pygame.image.load('assets/img/tutorial2.png')
+tutorial2_image = pygame.transform.smoothscale(tutorial_image2_raw, (screen_width, screen_height))
 
 # Buttons
 playbtn_image = pygame.image.load("assets/img/playbutton.png").convert_alpha()
@@ -65,7 +72,7 @@ playbtn_hover = pygame.transform.smoothscale(playbtn_hover_image, (playbtn_width
 readybtn = pygame.transform.smoothscale(readybtn_image, (readybtn_width, readybtn_height))
 readybtn_hover = pygame.transform.smoothscale(readybtn_hover_image, (readybtn_width, readybtn_height))
 
-# Button Rectangles
+# Button Hitboxes
 play_button_rect = pygame.Rect(screen_width // 2 - playbtn_width // 2, screen_height // 2 + 50, playbtn_width, playbtn_height)
 ready_button_rect = pygame.Rect(screen_width - readybtn_width - 30, screen_height - readybtn_height - 30, readybtn_width, readybtn_height)
 
@@ -105,22 +112,17 @@ plastic_images = [
 ]
 scaled_plastic_images = [pygame.transform.smoothscale(img, (plastic_width, plastic_height)) for img in plastic_images]
 
-# --- Sound Effects & Music ---
-# BGM 
-# Note: For continuous looping BGM, it's often better to use pygame.mixer.music
-# menubgm = pygame.mixer.Sound("assets/sound/bgm/menu.mp3")
-# lv1bgm = pygame.mixer.Sound("assets/sound/bgm/lv1.mp3")
-# lv2bgm = pygame.mixer.Sound("assets/sound/bgm/lv2.mp3")
-# lv3bgm = pygame.mixer.Sound("assets/sound/bgm/lv3.mp3")
-
 # SFX
 btn_sound = pygame.mixer.Sound("assets/sound/sound_effect/button.mp3")
 collect_sound = pygame.mixer.Sound("assets/sound/sound_effect/collect.wav")
+level_complete_sound = pygame.mixer.Sound("assets/sound/sound_effect/level_complete.mp3")
+text_sound = pygame.mixer.Sound("assets/sound/sound_effect/text_sound.mp3")
+damage_sound = pygame.mixer.Sound("assets/sound/sound_effect/damage.mp3")
 
 
 # --- Game Variables ---
-ship_width = 60 
-ship_height = 40 
+ship_width = 60
+ship_height = 40
 ship_velocity = 7
 
 plastic_speed = 5
@@ -133,27 +135,44 @@ fish_chance = {1: 8, 2: 6, 3: 3} # For fish, probability is checked against 200
 clock = pygame.time.Clock()
 
 intro_dialogue = [
-    "Ahoy, explorer! Welcome aboard.",
+    "Hey there, explorer! Welcome aboard.",
     "You're on a mission to study the ocean's wonders.",
     "Your goal is to collect fish data using the submarine.",
     "But keep your eyes open. The ocean is always changing...",
 ]
+# Story dialogues for each level
+# Level 1
+story_dialogue_1 = [
+    "Construction of new factories has begun.",
+    "Waste from the site is being dumped into the ocean.",
+    "Plastic are starting to appear in the water.",
+    "Avoid them at all costs!"
+]
+# Level 2
+story_dialogue_2 = [
+    "More factories have been built near the coast.",
+    "This is having a serious impact on the ecosystem.",
+    "You'll encounter more plastics now. Stay focused!"
+]
 
 # --- Functions ---
 
-def typewriter_text(surface, text, font, colour, x, y, speed=5):
+def typewriter_text(surface, text, font, colour, x, y, speed=5, background_image=None):
     displayed_text = ''
     last_update = pygame.time.get_ticks()
     index = 0
 
+    pygame.mixer.Sound.play(text_sound, loops=-1)
+    
     while index < len(text):
         current_time = pygame.time.get_ticks()
         if current_time - last_update >= speed:
             displayed_text += text[index]
             index += 1
             last_update = current_time
-
-        draw_story_screen_background(surface) # Redraw background
+            
+        if background_image:
+            draw_story_screen_background(surface, background_image)
         text_surface = font.render(displayed_text, True, colour)
         surface.blit(text_surface, (x, y))
         pygame.display.update()
@@ -161,16 +180,19 @@ def typewriter_text(surface, text, font, colour, x, y, speed=5):
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+    
+    pygame.mixer.Sound.stop(text_sound)
+    
+    while pygame.mixer.get_busy():
+        pygame.time.Clock().tick(60)
 
 def draw_menu():
     window.blit(menubg, (0, 0))
     mouse_pos = pygame.mouse.get_pos()
 
-    # Play menu BGM if not already playing
-    # Using pygame.mixer.music for continuous background music
     if not pygame.mixer.music.get_busy():
         pygame.mixer.music.load("assets/sound/bgm/menu.mp3")
-        pygame.mixer.music.play(-1) # Loop indefinitely
+        pygame.mixer.music.play(-1)
 
     if play_button_rect.collidepoint(mouse_pos):
         window.blit(playbtn_hover, play_button_rect.topleft)
@@ -179,9 +201,9 @@ def draw_menu():
 
     pygame.display.flip()
 
-def draw_story_screen_background(surface):
+def draw_story_screen_background(surface, background_image):
     surface.fill(black)
-    surface.blit(introbg, (0, 0))
+    surface.blit(background_image, (0, 0))
     captain_img = pygame.image.load("assets/img/captain.png").convert_alpha()
     captain_scaled = pygame.transform.smoothscale(captain_img, (180, 250))
     surface.blit(captain_scaled, (screen_width - 280, screen_height - 300))
@@ -189,9 +211,12 @@ def draw_story_screen_background(surface):
     pygame.draw.rect(surface, black, (50, screen_height - 120, screen_width - 100, 80))
     pygame.draw.rect(surface, white, (50, screen_height - 120, screen_width - 100, 80), 2)
 
-def run_intro_dialogue(dialogues):
+def run_story_dialogue(dialogues, story_image):
     for line in dialogues:
-        typewriter_text(window, line, context_font, white, 60, screen_height - 100)
+        draw_story_screen_background(window, story_image)
+        
+        typewriter_text(window, line, context_font, white, 60, screen_height - 100, background_image=story_image)
+        
         continue_text = small_font.render("(Press any key to continue)", True, white)
         window.blit(continue_text, (screen_width - continue_text.get_width() - 70, screen_height - 65))
         pygame.display.update()
@@ -207,7 +232,7 @@ def wait_for_key_press():
             elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
                 waiting = False
 
-def draw_tutorial():
+def draw_tutorial1():
     window.blit(tutorial_image, (0, 0))
     mouse_pos = pygame.mouse.get_pos()
 
@@ -217,8 +242,17 @@ def draw_tutorial():
         window.blit(readybtn, ready_button_rect.topleft)
     pygame.display.flip()
 
+def draw_tutorial2():
+    window.blit(tutorial2_image, (0, 0))
+    mouse_pos = pygame.mouse.get_pos()
+    if ready_button_rect.collidepoint(mouse_pos):
+        window.blit(readybtn_hover, ready_button_rect.topleft)
+    else:
+        window.blit(readybtn, ready_button_rect.topleft)
+    pygame.display.flip()
+
 def draw_game_over(score):
-    pygame.mixer.music.stop() # Stop any background music
+    pygame.mixer.music.stop()
     window.fill(white)
     game_over_text = title_font.render("Game Over", True, black)
     score_text = score_font.render(f"Your Score: {score}", True, black)
@@ -275,9 +309,10 @@ def wait_for_button_click(button_rect, screen_drawing_function):
     return True
 
 def draw_level_complete(level):
-    pygame.mixer.music.stop() # Stop current level BGM
+    pygame.mixer.music.stop()
+    pygame.mixer.Sound.play(level_complete_sound)
     window.fill(white)
-    complete_text = title_font.render(f"Day {level} Complete!", True, black)
+    complete_text = title_font.render(f"Level {level} Complete!", True, black)
     next_day_text = score_font.render("Preparing for the next dive...", True, black)
     window.blit(complete_text, (screen_width // 2 - complete_text.get_width() // 2, 150))
     window.blit(next_day_text, (screen_width // 2 - next_day_text.get_width() // 2, 250))
@@ -285,16 +320,15 @@ def draw_level_complete(level):
     pygame.time.wait(3000)
 
 def run_game(level):
-    pygame.mixer.music.stop() # Stop any previous BGM (e.g., menu music)
+    pygame.mixer.music.stop()
 
-    # Load and play BGM for the current level
     if level == 1:
         pygame.mixer.music.load("assets/sound/bgm/lv1.mp3")
     elif level == 2:
         pygame.mixer.music.load("assets/sound/bgm/lv2.mp3")
     elif level == 3:
         pygame.mixer.music.load("assets/sound/bgm/lv3.mp3")
-    pygame.mixer.music.play(-1) # Loop indefinitely
+    pygame.mixer.music.play(-1)
 
     total_fuel_time = 40
     ship_x = 50
@@ -308,7 +342,6 @@ def run_game(level):
     running = True
 
     while running:
-        # Draw background based on level
         if level == 1:
             window.blit(bg, (0, 0))
         elif level == 2:
@@ -321,7 +354,6 @@ def run_game(level):
                 pygame.quit()
                 return None
 
-        # Submarine Movement
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP] or keys[pygame.K_w]:
             if ship_y > -50 :
@@ -336,27 +368,22 @@ def run_game(level):
             if ship_x + ship_width < screen_width // 3:
                 ship_x += ship_velocity
 
-        # Draw submarine (using the pre-scaled image)
         window.blit(submarine_image, (ship_x, ship_y))
 
-        # Ship hitbox for collisions
         ship_hitbox = pygame.Rect(ship_x + 20, ship_y + 45, 110, 60)
-        # pygame.draw.rect(window, (0, 255, 0), ship_hitbox, 2) # Debug outline
 
-        # Plastic spawning and collision
         if random.randint(1, 100) <= plastic_chance.get(level, 0):
             plastics.append((spawn_plastic(), random.choice(scaled_plastic_images)))
 
-        # Move plastics and check for collisions
         for i, (plastic_rect, plastic_img) in enumerate(plastics[:]):
             plastic_rect.x -= plastic_speed
             window.blit(plastic_img, plastic_rect.topleft)
             if ship_hitbox.colliderect(plastic_rect):
+                pygame.mixer.Sound.play(damage_sound)
                 total_fuel_time -= 3
                 plastics.pop(i)
-        plastics = [(r, img) for (r, img) in plastics if r.x + plastic_width > 0] # Remove off-screen plastics
+        plastics = [(r, img) for (r, img) in plastics if r.x + plastic_width > 0]
 
-        # Fish spawning and collision
         if random.randint(1, 200) <= fish_chance.get(level, 0):
             fish_list.append((spawn_fish(), random.choice(scaled_fish_images)))
 
@@ -367,39 +394,46 @@ def run_game(level):
                 pygame.mixer.Sound.play(collect_sound)
                 current_score += 1
                 fish_list.pop(i)
-        fish_list = [f for f in fish_list if f[0].x + fish_width > 0] # Remove off-screen fish
+        fish_list = [f for f in fish_list if f[0].x + fish_width > 0]
 
-        # Fuel calculations
         elapsed_time = time.time() - start_time
         fuel_left = max(0, 100 - int((elapsed_time / total_fuel_time) * 100))
 
         if fuel_left <= 0:
-            pygame.mixer.music.stop() # Stop BGM when fuel runs out
+            pygame.mixer.music.stop()
             if current_score > high_score:
                 save_high_score(current_score)
             return current_score
 
-        # Player Stats Display
         display_score(current_score, high_score, fuel_left)
-        level_text = score_font.render("Day " + str(level), True, white)
-        window.blit(level_text, [screen_width//2 - 50, 50])
+        level_text = score_font.render("Year " + str(level), True, white)
+        window.blit(level_text, [screen_width//2, 50])
 
         pygame.display.flip()
-        clock.tick(60) # Limit to 60 FPS
+        clock.tick(60)
 
 def run_all_levels():
     total_score = 0
     max_level = 3
     for level in range(1, max_level + 1):
         score = run_game(level)
-        if score is None: # Game quit during a level
+        if score is None:
             return
         total_score += score
         if level < max_level:
             draw_level_complete(level)
+
+            if level == 1:
+                run_story_dialogue(story_dialogue_1, lv2introbg)
+                
+                draw_tutorial2()
+                if not wait_for_button_click(ready_button_rect, draw_tutorial2):
+                    return None
+                
+            elif level == 2:
+                run_story_dialogue(story_dialogue_2, lv3introbg)
         else:
             draw_game_over(total_score)
-
 
 # --- Main Game Loop / Flow ---
 game_state = "menu"
@@ -412,12 +446,12 @@ while True:
         else:
             break
     elif game_state == "intro":
-        pygame.mixer.music.stop() # Stop menu music before intro
-        run_intro_dialogue(intro_dialogue)
+        pygame.mixer.music.stop()
+        run_story_dialogue(intro_dialogue, introbg)
         game_state = "tutorial"
     elif game_state == "tutorial":
-        draw_tutorial()
-        if wait_for_button_click(ready_button_rect, draw_tutorial):
+        draw_tutorial1()
+        if wait_for_button_click(ready_button_rect, draw_tutorial1):
             game_state = "game"
         else:
             break
@@ -426,5 +460,5 @@ while True:
         game_state = "quit"
     elif game_state == "quit":
         break
-
+    
 pygame.quit()
