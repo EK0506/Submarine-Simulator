@@ -156,35 +156,58 @@ story_dialogue_2 = [
 ]
 
 # --- Functions ---
-
 def typewriter_text(surface, text, font, colour, x, y, speed=5, background_image=None):
     displayed_text = ''
     last_update = pygame.time.get_ticks()
     index = 0
-
+    full_text_displayed = False
+    
+    # Play sound effect for typing
     pygame.mixer.Sound.play(text_sound, loops=-1)
     
-    while index < len(text):
-        current_time = pygame.time.get_ticks()
-        if current_time - last_update >= speed:
-            displayed_text += text[index]
-            index += 1
-            last_update = current_time
-            
-        if background_image:
-            draw_story_screen_background(surface, background_image)
-        text_surface = font.render(displayed_text, True, colour)
-        surface.blit(text_surface, (x, y))
-        pygame.display.update()
+    while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-    
-    pygame.mixer.Sound.stop(text_sound)
-    
-    while pygame.mixer.get_busy():
-        pygame.time.Clock().tick(60)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE or event.key == pygame.K_RETURN:
+                    if not full_text_displayed:
+                        # Skip to the end of the text
+                        displayed_text = text
+                        index = len(text)
+                        full_text_displayed = True
+                        pygame.mixer.Sound.stop(text_sound)
+                    else:
+                        # Text is already displayed, so a second key press exits the function
+                        return
+        # Typewriter animation logic
+        if not full_text_displayed:
+            current_time = pygame.time.get_ticks()
+            if current_time - last_update >= speed:
+                displayed_text += text[index]
+                index += 1
+                last_update = current_time
+                if index >= len(text):
+                    full_text_displayed = True
+                    pygame.mixer.Sound.stop(text_sound)
+
+        # Drawing the screen
+        if background_image:
+            draw_story_screen_background(surface, background_image)
+            
+        text_surface = font.render(displayed_text, True, colour)
+        surface.blit(text_surface, (x, y))
+        
+        # Draw the "continue" prompt only after the full text is displayed
+        if full_text_displayed:
+            continue_text = small_font.render("(Press space to continue)", True, white)
+            window.blit(continue_text, (screen_width - continue_text.get_width() - 70, screen_height - 65))
+            
+        pygame.display.update()
+
+        # This is where your original wait_for_key_press() would have been.
+        # Now it's integrated, so we don't need a separate call.
 
 def draw_menu():
     window.blit(menubg, (0, 0))
@@ -215,12 +238,11 @@ def run_story_dialogue(dialogues, story_image):
     for line in dialogues:
         draw_story_screen_background(window, story_image)
         
+        # Now the typewriter function handles both the animation and waiting for user input
         typewriter_text(window, line, context_font, white, 60, screen_height - 100, background_image=story_image)
         
-        continue_text = small_font.render("(Press any key to continue)", True, white)
-        window.blit(continue_text, (screen_width - continue_text.get_width() - 70, screen_height - 65))
-        pygame.display.update()
-        wait_for_key_press()
+        # You can remove the 'continue_text' part here if you want, or handle it inside the typewriter_text function.
+        # This will depend on your desired user experience.
 
 def wait_for_key_press():
     waiting = True
@@ -313,9 +335,7 @@ def draw_level_complete(level):
     pygame.mixer.Sound.play(level_complete_sound)
     window.fill(white)
     complete_text = title_font.render(f"Level {level} Complete!", True, black)
-    next_day_text = score_font.render("Preparing for the next dive...", True, black)
-    window.blit(complete_text, (screen_width // 2 - complete_text.get_width() // 2, 150))
-    window.blit(next_day_text, (screen_width // 2 - next_day_text.get_width() // 2, 250))
+    window.blit(complete_text, (screen_width // 2 - complete_text.get_width() // 2, screen_height // 2 - 50))
     pygame.display.flip()
     pygame.time.wait(3000)
 
