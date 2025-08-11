@@ -31,6 +31,7 @@ cour = "assets/font/courier_new.ttf"
 premier = "assets/font/premier2019.ttf"
 title_font = pygame.font.Font(cour, 60)
 score_font = pygame.font.Font(premier, 30)
+subtitle_font = pygame.font.Font(cour, 40)
 context_font = pygame.font.Font(cour, 22)
 small_font = pygame.font.Font(cour, 18)
 
@@ -126,7 +127,7 @@ collect_sound = pygame.mixer.Sound("assets/sound/sound_effect/collect.wav")
 level_complete_sound = pygame.mixer.Sound("assets/sound/sound_effect/level_complete.mp3")
 text_sound = pygame.mixer.Sound("assets/sound/sound_effect/text_sound.mp3")
 damage_sound = pygame.mixer.Sound("assets/sound/sound_effect/damage.mp3")
-
+game_finish_sound = pygame.mixer.Sound("assets/sound/sound_effect/game-finished.mp3")
 
 # --- Game Variables ---
 # Submarine hitbox
@@ -334,11 +335,15 @@ def draw_game_over(score):
     Music is stopped, the screen is shown for 3 seconds using pygame.time.wait.
     """
     pygame.mixer.music.stop()
+    pygame.mixer.Sound.play(game_finish_sound)  # Play game finish sound
     window.fill(white)
     game_over_text = title_font.render("Game Over", True, black)
-    score_text = score_font.render(f"Your Score: {score}", True, black)
+    score_text_surface = subtitle_font.render(f"Your Score: {score}", True, black) # Corrected Line
+
+
     window.blit(game_over_text, (screen_width // 2 - game_over_text.get_width() // 2, 150))
-    window.blit(score_text, (screen_width // 2 - score_text.get_width() // 2, 250))
+    window.blit(score_text_surface, (screen_width // 2 - score_text_surface.get_width() // 2, 250)) # Corrected Line
+    
     pygame.display.flip()
     pygame.time.wait(3000) # Pause for 3 seconds so player can read the score
 
@@ -413,7 +418,7 @@ def wait_for_button_click(button_rect, screen_drawing_function):
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN: # Check for mouse button down event
                 if button_rect.collidepoint(event.pos):
                     pygame.mixer.Sound.play(btn_sound)
                     waiting = False
@@ -426,22 +431,22 @@ def draw_level_complete(level):
     Stops any currently playing music, plays a completion SFX, shows the message,
     and waits 3 seconds.
     """
-    pygame.mixer.music.stop()
-    pygame.mixer.Sound.play(level_complete_sound)
-    window.fill(white)
-    complete_text = title_font.render(f"Level {level} Complete!", True, black)
+    pygame.mixer.music.stop() 
+    pygame.mixer.Sound.play(level_complete_sound) # Play level complete sound
+    window.fill(white) 
+    complete_text = title_font.render(f"Level {level} Complete!", True, black) # Center the text
     window.blit(complete_text, (screen_width // 2 - complete_text.get_width() // 2, screen_height // 2 - 50))
     pygame.display.flip()
-    pygame.time.wait(3000)
+    pygame.time.wait(3000) # Pause for 3 seconds to show the message
 
-def run_game(level):
+def run_game(level, initial_score):
     """
     Core game loop for a given level.
+    Accepts the score from previous levels and returns the updated score.
     """
-    current_score = 0 #Set initial score to 0
-    pygame.mixer.music.stop() # Stop any music from previous levels
-
-    # Choose background music according to level
+    current_score = initial_score  # Initialize score with the accumulated total
+    pygame.mixer.music.stop()
+    # Load the background image for the current level
     if level == 1:
         pygame.mixer.music.load("assets/sound/bgm/lv1.mp3")
     elif level == 2:
@@ -450,18 +455,17 @@ def run_game(level):
         pygame.mixer.music.load("assets/sound/bgm/lv3.mp3")
     pygame.mixer.music.play(-1)
 
-    # total_fuel_time is the time in seconds that corresponds to 100% fuel.
-    total_fuel_time = 40
+    total_fuel_time = 40 # seconds of fuel time
     ship_x = 50
     ship_y = screen_height // 2
     plastics = []
     fish_list = []
 
-    high_score = load_high_score()
+    high_score = load_high_score() # Load the high score from file
     start_time = time.time()
     running = True
 
-    while running:  # Draw level-specific background
+    while running: #Background for each level
         if level == 1:
             window.blit(bg, (0, 0))
         elif level == 2:
@@ -469,91 +473,90 @@ def run_game(level):
         elif level == 3:
             window.blit(bg3, (0, 0))
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for event in pygame.event.get(): 
+            if event.type == pygame.QUIT: # User clicked the close button
                 pygame.quit()
                 return None
-        #Ship movement controls
+        # Handle keyboard input for submarine movement
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_UP] or keys[pygame.K_w]:
+        if keys[pygame.K_UP] or keys[pygame.K_w]: # Move up
             if ship_y > -50 :
                 ship_y -= ship_velocity
-        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+        if keys[pygame.K_DOWN] or keys[pygame.K_s]: #Move down
             if ship_y + ship_height < screen_height - 60:
                 ship_y += ship_velocity
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]: # Move left
             if ship_x > 0:
                 ship_x -= ship_velocity
-        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+        if keys[pygame.K_RIGHT] or keys[pygame.K_d]: # Move right
             if ship_x + ship_width < screen_width // 3:
                 ship_x += ship_velocity
 
-        window.blit(submarine_image, (ship_x, ship_y)) # Draw the submarine at the new position
-        ship_hitbox = pygame.Rect(ship_x + 20, ship_y + 45, 110, 60) # Create a hitbox for collision detection
-        #pygame.draw.rect(window, green, ship_hitbox, 2)  # Draw hitbox for debugging
+        window.blit(submarine_image, (ship_x, ship_y))
+        ship_hitbox = pygame.Rect(ship_x + 20, ship_y + 45, 110, 60) 
+        #pygame.draw.rect(window, red, ship_hitbox, 2) # Draw the hitbox for debugging
 
-        if random.randint(1, 100) <= plastic_chance.get(level, 0): # Spawn plastics based on level chance
+        if random.randint(1, 100) <= plastic_chance.get(level, 0): # Spawn plastic
             plastics.append((spawn_plastic(), random.choice(scaled_plastic_images)))
-
-        # Update plastics: move left, draw, check collision with player, and removal
-        for i, (plastic_rect, plastic_img) in enumerate(plastics[:]):
-            plastic_rect.x -= plastic_speed
+        for i, (plastic_rect, plastic_img) in enumerate(plastics[:]): 
+            plastic_rect.x -= plastic_speed # Move plastic left
             window.blit(plastic_img, plastic_rect.topleft)
-            if ship_hitbox.colliderect(plastic_rect): # Collision detection
-                pygame.mixer.Sound.play(damage_sound)
-                total_fuel_time -= 3
-                plastics.pop(i) # Remove plastic on collision
-        plastics = [(r, img) for (r, img) in plastics if r.x + plastic_width > 0] # Keep plastics on screen
+            if ship_hitbox.colliderect(plastic_rect): # Hit plastic
+                pygame.mixer.Sound.play(damage_sound)  # Play damage sound
+                total_fuel_time -= 3 # -3 seconds of fuel time
+                plastics.pop(i) # Remove plastic after hit
+        plastics = [(r, img) for (r, img) in plastics if r.x + plastic_width > 0] # Keep only plastics that are still on screen
 
-        if random.randint(1, 200) <= fish_chance.get(level, 0): # Spawn fish based on level chance
-            fish_list.append((spawn_fish(), random.choice(scaled_fish_images))) 
-
-        for i, (fish_rect, fish_img) in enumerate(fish_list[:]): # Move fish left, draw, check collision with player, and removal
-            fish_rect.x -= fish_speed
-            window.blit(fish_img, fish_rect.topleft) # Draw fish at its position
-            if ship_hitbox.colliderect(fish_rect):
+        if random.randint(1, 200) <= fish_chance.get(level, 0): # Spawn fish
+            fish_list.append((spawn_fish(), random.choice(scaled_fish_images)))
+        for i, (fish_rect, fish_img) in enumerate(fish_list[:]):
+            fish_rect.x -= fish_speed # Move fish left
+            window.blit(fish_img, fish_rect.topleft)
+            if ship_hitbox.colliderect(fish_rect): # Collect fish
                 pygame.mixer.Sound.play(collect_sound)
-                current_score += 1 # Increment score on fish collection
-                fish_list.pop(i) # Remove fish on collection
-        fish_list = [f for f in fish_list if f[0].x + fish_width > 0] # Keep fish on screen
+                current_score += 1 
+                fish_list.pop(i) 
+        fish_list = [f for f in fish_list if f[0].x + fish_width > 0] # Keep only fish that are still on screen
 
         elapsed_time = time.time() - start_time # Calculate elapsed time since the level started
         fuel_left = max(0, 100 - int((elapsed_time / total_fuel_time) * 100)) # Calculate fuel left as a percentage
 
-        if fuel_left <= 0: # If fuel runs out, end the game
+        if fuel_left <= 0: # Out of fuel
             pygame.mixer.music.stop()
-            if current_score > high_score: # Check if new high score
+            if current_score > high_score: # New high score
                 save_high_score(current_score) # Save new high score
             return current_score
 
         display_score(current_score, high_score, fuel_left) # Display score panel
-        level_text = score_font.render("Year " + str(level), True, white) # Draw level text
-        window.blit(level_text, [screen_width//2, 50]) # Draw level text at the top center
+        level_text = score_font.render("Year " + str(level), True, white) # Centered level text
+        window.blit(level_text, [screen_width//2, 50])
 
         pygame.display.flip()
         clock.tick(60) # Limit to 60 FPS
+    
+    return current_score
 
-def run_all_levels():
-    total_score = 0 # Initialize total score for all levels
-    max_level = 3
+def run_all_levels(): 
+    total_score = 0 # Initialize total score to 0
+    max_level = 3 # Total number of levels in the game
     for level in range(1, max_level + 1): # Loop through each level
-        score = run_game(level)
-        if score is None:
-            return
-        total_score += score
+        updated_score = run_game(level, total_score) # If the player runs out of fuel, run_game returns None
+        if updated_score is None:
+            return None # If run_game returns None, exit the game
+        total_score = updated_score # Update total score with the score from the current level
         if level < max_level:
-            draw_level_complete(level) # Show level complete screen before next level
-            if level == 1:
-                run_story_dialogue(story_dialogue_1, lv2introbg) # Intro before level 2
-                
+            draw_level_complete(level) # Play level complete sound and show message
+            if level == 1: # After level 1, show the story dialogue
+                run_story_dialogue(story_dialogue_1, lv2introbg)
                 draw_tutorial2()
-                if not wait_for_button_click(ready_button_rect, draw_tutorial2): # If user clicks ready button, continue to next level
+                if not wait_for_button_click(ready_button_rect, draw_tutorial2): # User clicked Ready button
                     return None
-                
-            elif level == 2:
-                run_story_dialogue(story_dialogue_2, lv3introbg) # Intro before level 3
+            elif level == 2: # After level 2, show the story dialogue
+                run_story_dialogue(story_dialogue_2, lv3introbg)
         else:
-            draw_game_over(total_score) # Final game over screen after last level
+            draw_game_over(total_score) # Final game over screen after the last level
+    
+    return "game_over"
 
 # --- Main Game Loop / Flow ---
 game_state = "menu"
@@ -576,8 +579,11 @@ while True:
         else:
             break
     elif game_state == "game":
-        run_all_levels()
-        game_state = "quit" # After all levels, exit the game
+        game_result = run_all_levels()
+        if game_result == "game_over":
+            game_state = "menu"  # Reset to the main menu after the game ends
+        elif game_result is None:
+            game_state = "quit"  # Handle case where user quits mid-game
     elif game_state == "quit":
         break
     
