@@ -138,13 +138,13 @@ ship_velocity = 7 # pixels per frame
 plastic_speed = 5
 fish_speed = 6
 
-# Plastic and fish spawn probabilities
+# Plastic and fish spawning probabilities
 # These are dictionaries where the key is the level number and the value is the spawn chance per frame.
 # It works by genereating a random number between 1 and 100 (1 and 200 for fish), and if it is less than or equal to the value in the dictionary,
 # the item spawns. For example, plastic_chance[1] = 0 means no plastics spawn in level 1.
 # You can adjust these values to change the difficulty of each level.
 
-plastic_chance = {1: 0, 2: 1, 3: 3} 
+plastic_chance = {1: 0, 2: 1, 3: 2} 
 fish_chance = {1: 8, 2: 6, 3: 3} 
 
 clock = pygame.time.Clock()
