@@ -13,11 +13,11 @@ pygame.font.init()
 pygame.mixer.init() # Initialize the mixer for sound effects and music
 
 # --- Screen Setup ---
-screen_width = 900
-screen_height = 506
+screen_width = 900 
+screen_height = 506 #16:9 aspect ratio
 window = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Submarine Simulator")
-
+pygame.display.set_icon(pygame.image.load("assets/img/icon.png")) # Set the game icon
 # --- Colours ---
 light_blue = (173, 216, 230)
 brown = (102, 51, 0)
@@ -29,8 +29,8 @@ black = (0, 0, 0)
 # --- Fonts ---
 cour = "assets/font/courier_new.ttf"
 premier = "assets/font/premier2019.ttf"
-title_font = pygame.font.Font(cour, 60)
-score_font = pygame.font.Font(premier, 30)
+title_font = pygame.font.Font(cour, 60) #Fonts for titles
+score_font = pygame.font.Font(premier, 30) 
 subtitle_font = pygame.font.Font(cour, 40)
 context_font = pygame.font.Font(cour, 22)
 small_font = pygame.font.Font(cour, 18)
