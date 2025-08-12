@@ -486,10 +486,10 @@ def run_game(level, initial_score):
             if ship_y + ship_height < screen_height - 60:
                 ship_y += ship_velocity
         if keys[pygame.K_LEFT] or keys[pygame.K_a]: # Move left
-            if ship_x > 0:
+            if ship_x > -20:
                 ship_x -= ship_velocity
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]: # Move right
-            if ship_x + ship_width < screen_width // 3:
+            if ship_x + ship_width < screen_width - 50:
                 ship_x += ship_velocity
 
         window.blit(submarine_image, (ship_x, ship_y))
